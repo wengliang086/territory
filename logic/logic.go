@@ -331,8 +331,10 @@ func (m *Map) AddFlag(x int32, y int32, allianceId int32, isFortress bool, tm ti
 		return nil, errors.New("no neighbor")
 	}
 
+	// 创建旗子
 	f := NewFlag(x, y, allianceId, isFortress, m, tm)
 
+	// 联盟维度存储旗子
 	flags := m.flags[f.AllianceId]
 	if flags == nil {
 		flags = make(map[*Flag]*Flag)
@@ -341,11 +343,12 @@ func (m *Map) AddFlag(x int32, y int32, allianceId int32, isFortress bool, tm ti
 
 	flags[f] = f
 
+	// 联盟要塞单独存放
 	if isFortress {
 		fortresses := m.fortresses[f.AllianceId]
 
 		if fortresses == nil {
-			fortresses = make(map[*Flag]*Flag)
+			fortresses = make(map[*Flag]*Flag) // 每个联盟一个要塞的话，没必要切片
 			m.fortresses[f.AllianceId] = fortresses
 		}
 
@@ -501,6 +504,8 @@ func (m *Map) scanFlagArea(flag *Flag) {
 
 	marked := make(map[int32]map[int32]bool)
 
+	// 标记点的OwnerFlag
+	// 标记旗子的Overlap、Neighbor
 	scan := func(x int32, y int32) {
 		if !m.markCoordinate(marked, x, y) {
 			return
@@ -537,27 +542,32 @@ func (m *Map) scanFlagArea(flag *Flag) {
 	}
 
 	m.markCoordinate(marked, x, y)
+	// 􏳦􏲎􏳧􏳨􏳦􏲎􏳧􏳨广度优先队列
 	for head != nil {
 		tile := head.Tile
 
+		// 左移一个点
 		if tile.X > minX {
 			scan(tile.X-1, tile.Y)
 		} else if tile.X == minX {
 			checkNeighbor(tile.X-1, tile.Y)
 		}
 
+		// 右移一个点
 		if tile.X < maxX {
 			scan(tile.X+1, tile.Y)
 		} else if tile.X == maxX {
 			checkNeighbor(tile.X+1, tile.Y)
 		}
 
+		// 上移一个点
 		if tile.Y > minY {
 			scan(tile.X, tile.Y-1)
 		} else if tile.Y == minY {
 			checkNeighbor(tile.X, tile.Y-1)
 		}
 
+		// 下移一个点
 		if tile.Y < maxY {
 			scan(tile.X, tile.Y+1)
 		} else if tile.Y == maxY {
@@ -584,6 +594,7 @@ func (m *Map) markCoordinate(marked map[int32]map[int32]bool, x int32, y int32) 
 	return !exists
 }
 
+// 重算旗子的有效性
 func (m *Map) scanAllianceArea(allianceId int32) {
 	type FlagListNode struct {
 		Flag *Flag
